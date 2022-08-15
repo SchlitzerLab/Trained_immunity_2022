@@ -41,7 +41,7 @@ lapply(c(list.cran.packages,list.bioc.packages), require, character.only = TRUE)
 
 # working directory
 
-```{r}
+```{r,include=FALSE}
 # system_dir = "/Users/jiangyanyu/sciebo/"
 # system_dir = "/home/yu.j/sciebo/"
 system_dir = "/home/jyu/rstudio/"
