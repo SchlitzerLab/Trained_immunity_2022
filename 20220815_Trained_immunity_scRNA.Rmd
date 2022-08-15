@@ -1,0 +1,410 @@
+---
+title: "Figures for the Trained immunity project"
+author: "Jiangyan Yu (jiangyan.yu@uni-bonn.de)"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: yes
+    theme: united
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# libraries & functions
+
+```{r,include=FALSE}
+# rm(list = ls())
+set.seed(123)
+
+list.cran.packages = c("ggplot2","Seurat","dplyr","magrittr","tidyr",'ggpubr',"Seurat")
+new.cran.packages <- list.cran.packages[!(list.cran.packages %in% installed.packages()[,"Package"])]
+if(length(new.cran.packages)>0) install.packages(new.cran.packages)
+
+list.bioc.packages = c("nichenetr","monocle3","monocle","SeuratWrappers","edgeR","ComplexHeatmap","AUCell")
+new.bioc.packages <- list.bioc.packages[!(list.bioc.packages %in% installed.packages()[,"Package"])]
+if(length(new.bioc.packages)>0)if (!requireNamespace("BiocManager")) install.packages("BiocManager")
+BiocManager::install(new.bioc.packages, update = FALSE)
+
+lapply(c(list.cran.packages,list.bioc.packages), require, character.only = TRUE)
+
+# rm("list.bioc.packages","list.cran.packages","new.bioc.packages","new.cran.packages" )
+```
+
+# working directory
+
+```{r}
+# system_dir = "/Users/jiangyanyu/sciebo/"
+# system_dir = "/home/yu.j/sciebo/"
+system_dir = "/home/jyu/rstudio/"
+working_dir = paste0(system_dir,"/Projects/Katzmarski_mouse_macro_ownerJY/")
+published_data_dir = paste0(system_dir,"/general_scripts/publised_datasets/")
+global_ref_dir =paste0(system_dir,"/general_scripts/Global_ref_data/")
+gsea_pathway_dir = paste0(system_dir,"/general_scripts/Global_ref_data/")
+
+source(paste0(global_ref_dir,"general_functions.R"))
+```
+
+# process scRNA data
+
+## load saved rdata
+
+following filtering criteria was applied in the file: Schlitzer_seuratObject_firstExperiment_2020-02-07.RData
+subset = nFeature_RNA > 500 & nFeature_RNA < 3000 & percent.mt < 10 & percent.Hb < 0.0001
+
+```{r}
+# load(paste(working_dir,"Schlitzer_seuratObject_firstExperiment_2020-02-07.RData",sep=""))
+# 
+# run01_counts = seurat@assays$RNA@counts
+# jonas_run01_metadata = seurat@meta.data
+# 
+# run01_seurat = CreateSeuratObject(run01_counts, min.cells = 3, project = "Katzmarski_seurat_run01_allcells", meta.data = seurat@meta.data[,c("sample","status")])
+# rm(run01_counts,seurat)
+# 
+# run01_seurat[["percent.mt"]] <- PercentageFeatureSet(run01_seurat, pattern = "^mt-")
+# FeatureScatter(run01_seurat,feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+# VlnPlot(run01_seurat,features = c("nCount_RNA","nFeature_RNA","percent.mt"))
+```
+
+## re-run seurat
+
+```{r}
+# run01_seurat = run01_seurat %>% NormalizeData(., normalization.method = "LogNormalize", scale.factor = 10000) %>% FindVariableFeatures(., selection.method = "vst", nfeatures = 2000) %>% ScaleData(., features = rownames(.)) %>% RunPCA(.,features = VariableFeatures(.), verbose = FALSE) %>% JackStraw(., num.replicate = 100) %>% ScoreJackStraw(., dims = 1:20)
+# 
+# JackStrawPlot(run01_seurat, dims = 1:20)
+# ElbowPlot(run01_seurat)
+# 
+# run01_seurat = FindNeighbors(run01_seurat, dims = 1:10)
+# 
+# # set resolution as 0.25 to generate 6 clusters, as same as the output from time series experiment
+# run01_seurat = run01_seurat %>% FindClusters(., resolution = 0.25) %>% RunUMAP(., dims=1:10)
+# 
+# 
+# #UMAP
+# run01_seurat <- RunUMAP(run01_seurat,
+#                      dims = 1:30,
+#                      n.neighbors = 30,
+#                      min.dist = 1,
+#                      n.components = 3,
+#                      spread = 3,
+#                      a=1,
+#                      b=0.8)
+
+```
+
+## save/load reanalyzed file
+
+```{r}
+# saveRDS(run01_seurat,paste(working_dir,"JYu_Run01_reanalysis_20220517.rds"))
+
+run01_seurat = readRDS(paste(working_dir,"JYu_Run01_reanalysis_20220517.rds"))
+```
+
+# generate figures
+
+##1.Combined UMAP of D7 PBS vs. Glucan
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+
+
+# pdf(file = paste0(ms_folder,"1.day7_merged_umap.pdf"),width = 5, height = 4,colormodel="cmyk")
+DimPlot(run01_seurat,dims = c(1,2),pt.size=0.3)+
+  scale_color_manual(values = cluster_color)+
+  theme_classic()+
+  labs(subtitle = "Run01_day7_PBSandGLUCAN (10202 cells)")
+# dev.off()
+
+rm(ms_folder,cluster_color)
+```
+
+##2.UMAP of D7 PBS
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+
+
+# pdf(file = paste0(ms_folder,"2.day7_pbs_umap.pdf"),width = 5, height = 4,colormodel="cmyk")
+DimPlot(subset(run01_seurat,subset=status=="Solvent"),dims = c(1,2),pt.size=0.3)+
+  scale_color_manual(values = cluster_color)+
+  theme_classic()+
+  labs(subtitle = "Run01_day7_PBS (4845 cells)")
+# dev.off()
+
+rm(ms_folder,cluster_color)
+```
+
+##3.UMAP of D7 PBS
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+
+
+# pdf(file = paste0(ms_folder,"3.day7_glucan_umap.pdf"),width = 5, height = 4,colormodel="cmyk")
+DimPlot(subset(run01_seurat,subset=status=="Glucan"),dims = c(1,2),pt.size=0.3)+
+  scale_color_manual(values = cluster_color)+
+  theme_classic()+
+  labs(subtitle = "Run01_day7_GLUCAN (5357 cells)")
+# dev.off()
+
+rm(ms_folder,cluster_color)
+```
+
+##4.barplot by cluster
+
+```{r}
+ns <- table(organ = run01_seurat$status, cell_type = run01_seurat$seurat_clusters)
+## remove cluster 1, 5, 6
+# ns = ns[,c(1,3,4,5,8)]
+fq <- prop.table(ns, 1) * 100
+df <- as.data.frame(fq)
+
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+
+df$organ = factor(df$organ,levels = c("Glucan","Solvent"))
+library(ggplot2)
+
+# pdf(file = paste0(ms_folder,"4.barplot_by_cluster.pdf"),width = 5, height = 2,colormodel="cmyk")
+
+
+ggplot(df,aes(x=Freq,y=organ,fill=cell_type,label=cell_type))+
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=cluster_color)+
+  theme_classic()+
+  # geom_text(position = position_stack(vjust = 0.5))+
+  theme(axis.title=element_blank())
+
+# dev.off()
+rm(ns,fq,df,cluster_color,ms_folder)
+```
+
+##5.barplot by cluster
+
+```{r}
+ns <- table(organ = run01_seurat$seurat_clusters, cell_type = run01_seurat$status)
+## remove cluster 1, 5, 6
+# ns = ns[,c(1,3,4,5,8)]
+fq <- prop.table(ns, 1) * 100
+df <- as.data.frame(fq)
+
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+cluster_color = c("white","#A35884")
+
+# df$organ = factor(df$organ,levels = c("Glucan","Solvent"))
+library(ggplot2)
+
+# pdf(file = paste0(ms_folder,"5.barplot_by_condition.pdf"),width = 5, height = 2,colormodel="cmyk")
+
+
+ggplot(df,aes(x=Freq,y=organ,fill=cell_type,label=cell_type))+
+  geom_bar(stat="identity",colour="black")+
+  scale_fill_manual(values=cluster_color)+
+  theme_classic()+
+  # geom_text(position = position_stack(vjust = 0.5))+
+  theme(axis.title=element_blank())
+ 
+# dev.off()
+rm(ns,fq,df,cluster_color,ms_folder)
+```
+##5.1 APOE violin
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+# pdf(file = paste0(ms_folder,"5.1.ApoeViolin.pdf"),width = 4, height = 4,colormodel="cmyk")
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+VlnPlot(run01_seurat,features = c("Apoe"),group.by = "seurat_clusters")+scale_fill_manual(values = cluster_color)
+
+# dev.off()
+rm(cluster_color,ms_folder)
+```
+
+##6.DEG Heatmap D7
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+# pdf(file = paste0(ms_folder,"6.DEG_heatmap_run01.pdf"),width = 6,height = 8)
+run01_seurat_deg = FindAllMarkers(run01_seurat,only.pos = FALSE, min.pct = 0.25, logfc.threshold = 0.25)
+DoHeatmap(run01_seurat, 
+          features = run01_seurat_deg %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC) %>% .$gene,
+          group.colors = cluster_color)+
+   scale_fill_gradientn(colors = c("blue", "white", "red"))
+# dev.off()
+```
+
+##7.UMAP Glucan D0, 7, 21
+
+```{r}
+# ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+# 
+# cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C","white")
+# cell_selected = run02_seurat@meta.data[unlist(tapply(1:nrow(run02_seurat@meta.data),run02_seurat@meta.data$combined_condition,function(x) sample(x,978))),]
+# cell_selected = subset(cell_selected,combined_condition!="BAL_Glucan_d14")
+# 
+# # pdf(file = paste0(ms_folder,"7.UMAP_D0_D7_D21_run02.pdf"),width = 12, height = 4,colormodel="cmyk")
+# DimPlot(run02_seurat[,rownames(cell_selected)],dims = c(2,3),pt.size=0.3,split.by = "combined_condition")+
+#   scale_color_manual(values = cluster_color)+
+#   theme_classic()+
+#   labs(subtitle = "Run02_glucan (978 cells per condition)")
+# # dev.off()
+# 
+# rm(ms_folder,cluster_color)
+```
+
+##8.barplot of gene expressions
+
+SiglecF, ITGAX,, Fapb4, Ear2, Prdx1, Top2a, Mki67, Gpnmb, TREM2, ApoE, ifit2, ifit3, Gbp2
+
+```{r}
+tmp_genes = c("Siglecf", "Itgax", "Fabp4", "Ear2", "Prdx1", "Top2a", "Mki67", "Gpnmb", "Trem2", "Apoe", "Ifit2", "Ifit3", "Gbp2")
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C","white")
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+
+# pdf(file = paste0(ms_folder,"8.barplot_of_selected_genes.pdf"),width = 6, height = 2,colormodel="cmyk")
+# 
+# for(i in c(1:length(tmp_genes))){
+#   tmp_data = cbind(run01_seurat@assays$RNA@data[tmp_genes[i],],run01_seurat@meta.data)
+#   colnames(tmp_data)[1] = tmp_genes[i]
+#   tmp_data = tmp_data[order(tmp_data$seurat_clusters),]
+#   
+#   p = ggplot(tmp_data,aes(x=c(1:nrow(tmp_data)),y=get(tmp_genes[i]),fill=seurat_clusters))+
+#     geom_col(width = 1)+
+#     scale_fill_manual(values  = cluster_color)+
+#     theme_classic()+
+#     theme(axis.title.x=element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank())+
+#     labs(title = tmp_genes[i],y="Normazlied UMI counts")
+#     
+#   print(p)
+# }
+# 
+# dev.off()
+
+## save one figure per file
+
+for(i in c(1:length(tmp_genes))){
+  # pdf(file = paste0(ms_folder,"8.barplot_of_",tmp_genes[i], ".pdf"),width = 6, height = 2,colormodel="cmyk")
+  tmp_data = cbind(run01_seurat@assays$RNA@data[tmp_genes[i],],run01_seurat@meta.data)
+  colnames(tmp_data)[1] = tmp_genes[i]
+  tmp_data = tmp_data[order(tmp_data$seurat_clusters),]
+  
+  p = ggplot(tmp_data,aes(x=c(1:nrow(tmp_data)),y=get(tmp_genes[i]),fill=seurat_clusters))+
+    geom_col(width = 1)+
+    scale_fill_manual(values  = cluster_color)+
+    theme_classic()+
+    theme(axis.title.x=element_blank(),axis.text.x = element_blank(),axis.ticks.x = element_blank())+
+    labs(title = tmp_genes[i],y="Normazlied UMI counts")
+    
+  print(p)
+  # dev.off()
+}
+
+rm(p,tmp_genes, cluster_color, ms_folder, tmp_data,i)
+
+
+
+```
+
+##8.1.violin of gene expressions
+
+SiglecF, ITGAX,, Fapb4, Ear2, Prdx1, Top2a, Mki67, Gpnmb, TREM2, ApoE, ifit2, ifit3, Gbp2
+
+```{r}
+tmp_genes = c("Siglecf", "Itgax", "Fabp4", "Top2a", "Mki67", "Gpnmb", "Apoe", "Ifit2", "Gbp2")
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C","white")
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+
+# pdf(file = paste0(ms_folder,"8.1.vlnplot_of_selected_genes.pdf"),width = 4, height = 4,colormodel="cmyk")
+
+for(i in c(1:length(tmp_genes))){
+
+  p = VlnPlot(run01_seurat,features = tmp_genes[i],group.by = "seurat_clusters")+scale_fill_manual(values = cluster_color)
+
+
+  print(p)
+}
+
+# dev.off()
+
+
+
+
+rm(p,tmp_genes, cluster_color, ms_folder, tmp_data,i)
+
+
+
+```
+
+##10.run02_UMAP
+
+```{r}
+# ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+# 
+# cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+# 
+# 
+# # pdf(file = paste0(ms_folder,"10.run02_merged_umap.pdf"),width = 5, height = 4,colormodel="cmyk")
+# tmp_seurat= subset(run02_seurat,subset=seurat_clusters!=5) %>% subset(.,subset=combined_condition!="BAL_Glucan_d14")
+# 
+# DimPlot(tmp_seurat,dims = c(2,3),pt.size=0.3)+
+#   scale_color_manual(values = cluster_color)+
+#   theme_classic()+
+#   labs(subtitle = "Run02_BAL_glucan_D0-D7-D21 (3069 cells)")
+# # dev.off()
+# 
+# rm(ms_folder,cluster_color, tmp_seurat)
+```
+
+##11.DEG Heatmap run02
+
+```{r}
+# ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+# cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+# # pdf(file = paste0(ms_folder,"11.DEG_heatmap_run02.pdf"),width = 6,height = 8)
+# tmp_seurat= subset(run02_seurat,subset=seurat_clusters!=5) %>% subset(.,subset=combined_condition!="BAL_Glucan_d14")
+# 
+# 
+# DoHeatmap(tmp_seurat, 
+#           features = run02_seurat_deg %>% subset(.,cluster!=5) %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC) %>% .$gene,
+#           group.colors = cluster_color)+
+#    scale_fill_gradientn(colors = c("blue", "white", "red"))
+# # dev.off()
+# 
+# rm(ms_folder,cluster_color, tmp_seurat)
+```
+
+##12.QC plots
+
+```{r}
+ms_folder = "/home/yu.j/sciebo/Projects/Katzmarski_mouse_macro_ownerJY/ms_figures_reanalysis20220517/"
+cluster_color = c("#3A3A3C","#A9DDD9","#0E7D63","#A35884","#EEBA4C")
+# pdf(file = paste0(ms_folder,"12.1.QC_for_run01.pdf"),width = 12,height = 4)
+
+VlnPlot(run01_seurat,features = c("nCount_RNA","nFeature_RNA","percent.mt"),group.by = "seurat_clusters")+scale_fill_manual(values = cluster_color)
+
+# dev.off()
+
+
+
+```
+
+# session information
+
+```{r}
+sessionInfo()
+```
+
