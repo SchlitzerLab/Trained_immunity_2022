@@ -7,4 +7,4 @@ Theobald H.1*, Bejarano D.A.,1*, Katzmarski N.1*, Haub J.1*, Schulte-Schrepping 
 
 The script is executed in the docker image: jiangyanyu/jyu_r4.1.2:1.0\
 Raw fastq files were uploaded in PRJNA870927.\
-R seurat object can be found in GSE211575:
+R seurat object can be found in GSE211575.
