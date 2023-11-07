@@ -1,5 +1,5 @@
 # Trained_immunity_2022
-Script to analyze scRNA data for the trained immunity study:\
+Script to analyze scRNA data for the trained immunity study:
 
 Apolipoprotein E controls Dectin-1-dependent development of monocyte-derived alveolar macrophages upon pulmonary glucan-induced inflammatory adaptation
 
